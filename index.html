@@ -84,6 +84,17 @@ html,body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:'DM
 
 /* REGN-INDEKS */
 .card-regn{grid-column:span 2;grid-row:1}
+.card-pollen{grid-column:span 2;grid-row:1}
+.pollen-item{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border)}
+.pollen-item:last-child{border-bottom:none}
+.pollen-name{font-size:0.72rem;color:var(--ink2)}
+.pollen-val{font-family:'DM Mono',monospace;font-size:0.72rem;font-weight:500}
+.pollen-dot{width:7px;height:7px;border-radius:50%;margin-left:6px;flex-shrink:0}
+.p-ingen{background:var(--border)}
+.p-lav{background:#8bc34a}
+.p-moderat{background:#f5a623}
+.p-hoej{background:#e06818}
+.p-meget-hoej{background:#c0392b}
 .regn-index{font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:400;line-height:1;color:var(--ink);margin-top:0.2rem;letter-spacing:-1px}
 .regn-label{font-size:0.7rem;color:var(--ink3);margin-top:4px;line-height:1.5}
 .regn-bar-wrap{margin-top:auto;padding-top:0.9rem}
@@ -96,7 +107,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:'DM
 .regn-ticks span{font-family:'DM Mono',monospace;font-size:0.55rem;color:var(--ink3)}
 
 /* CLAUDE */
-.card-claude{grid-column:span 6;grid-row:1}
+.card-claude{grid-column:span 4;grid-row:1}
 .claude-header{display:flex;align-items:center;gap:8px;margin-bottom:0.6rem;flex-shrink:0;padding-bottom:0.6rem;border-bottom:1px solid var(--border)}
 .claude-orb{width:14px;height:14px;border-radius:50%;background:var(--orange);flex-shrink:0}
 .claude-name{font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink3)}
@@ -167,15 +178,17 @@ html,body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:'DM
 .event-time{font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:2px}
 .event-title{font-size:0.77rem;color:var(--ink);line-height:1.4}
 .card-links{grid-column:span 2;grid-row:3}
+.link-btn{display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--border);text-decoration:none;font-size:0.75rem;color:var(--ink2);transition:color 0.15s}
+.link-btn:last-child{border-bottom:none}
+.link-btn:hover{color:var(--orange)}
+.link-btn svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;opacity:0.7}
+.link-btn:hover svg{opacity:1}
 .card-politi{grid-column:span 4;grid-row:3}
 .politi-item{padding:5px 0;border-bottom:1px solid var(--border)}
 .politi-item:last-child{border-bottom:none}
 .politi-time{font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--orange);margin-bottom:2px}
 .politi-title{font-size:0.77rem;color:var(--ink);line-height:1.4}
 .link-btn{display:block;padding:7px 0;border-bottom:1px solid var(--border);text-decoration:none;font-size:0.75rem;color:var(--ink2);transition:color 0.1s}
-.link-btn:last-child{border-bottom:none}
-.link-btn:hover{color:var(--orange)}
-.link-btn span{margin-right:6px;font-size:0.85rem}
 
 /* FÆLLES */
 .refresh-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;font-size:0.68rem;color:var(--ink3);padding:2px 5px;font-family:'DM Mono',monospace}
@@ -201,7 +214,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:'DM
 .modal-close{position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;font-size:1rem;color:var(--ink3)}
 .modal-status{font-size:0.72rem;color:var(--orange);margin-top:0.6rem;min-height:1em;font-family:'DM Mono',monospace}
 @media(max-width:700px){
-  .card-weather,.card-regn,.card-claude,.card-stocks,.card-crypto,.card-commute,.card-news,.card-medicin,.card-events,.card-politi,.card-links{grid-column:span 12!important;grid-row:auto!important}
+  .card-weather,.card-regn,.card-pollen,.card-claude,.card-stocks,.card-crypto,.card-commute,.card-news,.card-medicin,.card-events,.card-politi,.card-links{grid-column:span 12!important;grid-row:auto!important}
   .clock{font-size:2.4rem}
 }
 </style>
@@ -237,6 +250,15 @@ html,body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:'DM
         <div class="regn-bar-track"><div class="regn-bar-fill" id="regn-bar" style="width:0%"></div></div>
         <div class="regn-timeline" id="regn-timeline"></div>
         <div class="regn-ticks"><span>Nu</span><span>15m</span><span>30m</span><span>45m</span></div>
+      </div>
+    </div>
+
+    <div class="card card-pollen">
+      <button class="refresh-btn" onclick="loadPollen()">↻</button>
+      <div class="card-label">Pollen · København</div>
+      <div id="pollen-body"><div style="font-size:0.75rem;color:var(--ink3)">Indlæser...</div></div>
+      <div style="margin-top:auto;padding-top:0.6rem">
+        <a href="https://www.astma-allergi.dk/dagenspollental" target="_blank" style="font-family:'DM Mono',monospace;font-size:0.58rem;color:var(--ink3);text-decoration:none;letter-spacing:1px">ASTMA-ALLERGI.DK ↗</a>
       </div>
     </div>
 
@@ -308,10 +330,14 @@ html,body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:'DM
 
     <div class="card card-links">
       <div class="card-label">Genveje</div>
-      <a href="https://www.pricerunner.dk/profile/alerts" target="_blank" class="link-btn"><span>🔔</span>PriceRunner</a>
-      <a href="https://calendar.google.com" target="_blank" class="link-btn"><span>📅</span>Kalender</a>
-      <a href="https://www.dr.dk/nyheder" target="_blank" class="link-btn"><span>📺</span>DR Nyheder</a>
-      <a href="https://www.folketing.dk" target="_blank" class="link-btn"><span>🏛</span>Folketing</a>
+      <a href="https://x.com" target="_blank" class="link-btn"><svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> <span>X</span></a>
+      <a href="https://www.instagram.com" target="_blank" class="link-btn"><svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg> <span>Instagram</span></a>
+      <a href="https://www.bilibili.com" target="_blank" class="link-btn"><svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.56 3.76v7.36c-.036 1.51-.556 2.769-1.56 3.773s-2.262 1.524-3.773 1.56H5.333c-1.51-.036-2.769-.556-3.773-1.56S.036 18.858 0 17.347v-7.36c.036-1.511.556-2.765 1.56-3.76 1.004-.996 2.262-1.52 3.773-1.574h.774l-1.174-1.12a1.234 1.234 0 010-1.813l.027-.027c.267-.249.573-.373.92-.373.347 0 .653.124.92.373L9.653 4.44a.836.836 0 01.187.213h4.267a.836.836 0 01.16-.213l2.853-2.747c.267-.249.573-.373.92-.373.347 0 .662.151.929.4.267.249.391.551.391.907 0 .355-.124.657-.373.906zM5.333 7.24c-.746.018-1.373.276-1.88.773-.506.498-.769 1.13-.786 1.894v7.52c.017.764.28 1.395.786 1.893.507.498 1.134.756 1.88.773h13.334c.746-.017 1.373-.275 1.88-.773.506-.498.769-1.129.786-1.893v-7.52c-.017-.765-.28-1.396-.786-1.894-.507-.497-1.134-.755-1.88-.773zM8 11.107c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c0-.373.129-.689.386-.947.258-.257.574-.386.947-.386zm8 0c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c.017-.391.15-.711.4-.96.249-.249.56-.373.933-.373z"/></svg> <span>Bilibili</span></a>
+      <a href="https://hive-bjj.gymdesk.com/members/schedule?bookable_only=1" target="_blank" class="link-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="M12 8v4m0 0l-3 4m3-4l3 4M9 12H6m6 0h3"/></svg> <span>Hive BJJ</span></a>
+      <a href="https://www.temu.com" target="_blank" class="link-btn"><svg viewBox="0 0 24 24"><path d="M6 2h12a1 1 0 011 1v1H5V3a1 1 0 011-1zM4 6h16l-1.5 13A1.5 1.5 0 0117 20.5H7A1.5 1.5 0 015.5 19L4 6z"/></svg> <span>Temu</span></a>
+      <a href="https://www.bt.dk" target="_blank" class="link-btn"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M7 8h4a2 2 0 010 4H7V8zm0 4h5a2 2 0 010 4H7v-4z"/></svg> <span>BT</span></a>
+      <a href="https://www.youtube.com" target="_blank" class="link-btn"><svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg> <span>YouTube</span></a>
+      <a href="https://www.pricerunner.dk/profile/alerts" target="_blank" class="link-btn"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> <span>PriceRunner</span></a>
     </div>
 
   </div>
@@ -922,10 +948,63 @@ async function loadPoliti(){
 }
 loadPoliti();
 
+/* ── POLLEN (Astma-Allergi Danmark) ── */
+async function loadPollen(){
+  const body=document.getElementById('pollen-body');
+  const proxy='https://api.allorigins.win/raw?url=';
+  const url='https://www.astma-allergi.dk/umbraco/Api/PollenApi/GetPollenFeed';
+  try{
+    const r=await fetch(proxy+encodeURIComponent(url),{cache:'no-store'});
+    const txt=await r.text();
+    const d=JSON.parse(txt);
+    // Find Copenhagen station
+    const station=d.find(s=>s.Name&&s.Name.toLowerCase().includes('køb'))||d[0];
+    if(!station||!station.Measurements){throw new Error('no data');}
+
+    // Level thresholds and labels
+    function pollenLevel(val,type){
+      if(val===null||val<0) return {cls:'p-ingen',label:'—'};
+      // General thresholds
+      const t=type&&type.toLowerCase();
+      let thresholds=[1,10,50,200]; // ingen, lav, moderat, høj, meget høj
+      if(t&&t.includes('græs')) thresholds=[1,10,50,200];
+      if(t&&t.includes('birk')||t&&t.includes('el')||t&&t.includes('hassel')) thresholds=[1,10,50,200];
+      if(val<thresholds[0]) return {cls:'p-ingen',label:'Ingen'};
+      if(val<thresholds[1]) return {cls:'p-lav',label:'Lav'};
+      if(val<thresholds[2]) return {cls:'p-moderat',label:'Moderat'};
+      if(val<thresholds[3]) return {cls:'p-hoej',label:'Høj'};
+      return {cls:'p-meget-hoej',label:'Meget høj'};
+    }
+
+    let html='';
+    const shown=station.Measurements.filter(m=>m.Value!==null&&m.Value>=0).slice(0,6);
+    if(!shown.length){
+      body.innerHTML='<div style="font-size:0.72rem;color:var(--ink3)">Ingen målinger — uden for sæson</div>';
+      return;
+    }
+    shown.forEach(m=>{
+      const {cls,label}=pollenLevel(m.Value,m.Name);
+      html+=`<div class="pollen-item">
+        <span class="pollen-name">${m.Name||'Ukendt'}</span>
+        <span style="display:flex;align-items:center">
+          <span class="pollen-val" style="color:var(--ink2)">${m.Value!=null?m.Value:'—'}</span>
+          <span class="pollen-dot ${cls}" title="${label}"></span>
+        </span>
+      </div>`;
+    });
+    body.innerHTML=html;
+  }catch(e){
+    // Fallback: ingen data / uden for sæson
+    body.innerHTML='<div style="font-size:0.72rem;color:var(--ink3)">Ingen data — tjek astma-allergi.dk</div>';
+  }
+}
+loadPollen();
+
 setInterval(loadVejr,10*60*1000);
 setInterval(loadRegn,5*60*1000);
 setInterval(loadAktier,5*60*1000);
 setInterval(loadKrypto,5*60*1000);
+setInterval(loadPollen,60*60*1000);
 setInterval(loadNyheder,15*60*1000);
 setInterval(loadPoliti,10*60*1000);
 setInterval(loadSunTimes,60*60*1000); // opdater soltider hver time
