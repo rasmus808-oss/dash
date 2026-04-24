@@ -510,29 +510,39 @@ async function loadRegn(){
 
 /* ── AKTIER ── */
 const AKTIER=[
-  {sym:'AAPL',name:'Apple'},
-  {sym:'NVDA',name:'Nvidia'},
-  {sym:'NOVO-B.CO',name:'Novo Nordisk'},
-  {sym:'MSFT',name:'Microsoft'},
-  {sym:'VWS.CO',name:'Vestas'},
+  {sym:'AAPL',   fh:'AAPL',      name:'Apple',        cur:'USD'},
+  {sym:'NVDA',   fh:'NVDA',      name:'Nvidia',       cur:'USD'},
+  {sym:'NOVO-B', fh:'NOVO-B:CO', name:'Novo Nordisk', cur:'DKK'},
+  {sym:'MSFT',   fh:'MSFT',      name:'Microsoft',    cur:'USD'},
+  {sym:'VWS',    fh:'VWS:CO',    name:'Vestas',       cur:'DKK'},
 ];
 async function loadAktier(){
   const body=document.getElementById('aktier-body');
   body.innerHTML='<div style="font-size:0.75rem;color:var(--ink3)">Henter...</div>';
+  const key=localStorage.getItem('cfg_finnhub')||'';
+  if(!key){
+    body.innerHTML='<div style="font-size:0.72rem;color:var(--ink3)">Tilføj Finnhub-nøgle via indstillinger</div>';
+    return;
+  }
   let html='';
   for(const s of AKTIER){
     try{
-      const r=await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${s.sym}?interval=1d&range=2d`);
-      const d=await r.json();const res=d.chart.result[0];
-      const closes=res.indicators.quote[0].close.filter(Boolean);
-      const price=closes[closes.length-1];const prev=closes[closes.length-2]||price;
-      const chg=price-prev;const pct=(chg/prev*100);
-      const cls=chg>=0?'pos':'neg';const arr=chg>=0?'↑':'↓';
-      const cur=s.sym.endsWith('.CO')?'DKK':'USD';
-      html+=`<div class="stock-row"><div><div class="stock-ticker">${s.sym.replace('.CO','')}</div><div class="stock-name">${s.name}</div></div><div><div class="stock-price ${cls}">${price.toFixed(0)} <span style="font-size:0.58rem;opacity:0.4">${cur}</span></div><div class="stock-chg ${cls}">${arr} ${Math.abs(pct).toFixed(1)}%</div></div></div>`;
-    }catch(e){html+=`<div class="stock-row"><div class="stock-ticker">${s.sym.replace('.CO','')}</div><div style="font-size:0.65rem;color:var(--ink3)">—</div></div>`;}
+      // Finnhub: ingen Content-Type header — ellers CORS preflight fejl
+      const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${s.fh}&token=${key}`);
+      const d=await r.json();
+      if(d.c==null||d.c===0) throw new Error('no data');
+      const price=d.c;       // current price
+      const prev=d.pc;       // previous close
+      const chg=price-prev;
+      const pct=(chg/prev*100);
+      const cls=chg>=0?'pos':'neg';
+      const arr=chg>=0?'↑':'↓';
+      html+=`<div class="stock-row"><div><div class="stock-ticker">${s.sym}</div><div class="stock-name">${s.name}</div></div><div><div class="stock-price ${cls}">${price.toFixed(s.cur==='DKK'?0:2)} <span style="font-size:0.58rem;opacity:0.4">${s.cur}</span></div><div class="stock-chg ${cls}">${arr} ${Math.abs(pct).toFixed(1)}%</div></div></div>`;
+    }catch(e){
+      html+=`<div class="stock-row"><div class="stock-ticker">${s.sym}</div><div style="font-size:0.65rem;color:var(--ink3)">—</div></div>`;
+    }
   }
-  body.innerHTML=html;
+  body.innerHTML=html||'<div style="font-size:0.72rem;color:var(--ink3)">Ingen data</div>';
 }
 
 /* ── KRYPTO ── */
@@ -798,6 +808,8 @@ async function claudeVelkomstMedVejr(){
 
 /* ── START ── */
 window.addEventListener('load',()=>{
+  // Pre-sæt Finnhub nøgle hvis ikke allerede gemt
+  if(!localStorage.getItem('cfg_finnhub')) localStorage.setItem('cfg_finnhub','d7lsq7hr01qk7lvu9tp0d7lsq7hr01qk7lvu9tpg');
   document.getElementById('greeting').textContent=getHilsen(new Date());
   loadVejr();
   loadRegn();
