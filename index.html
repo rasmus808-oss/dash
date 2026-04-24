@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Dashboard">
+<meta name="theme-color" id="theme-color-meta" content="#f0ebe3">
 <title>Dashboard — København</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20d%3D%22M4%2024h24v3H4zM4%2021l4-10%208%206%204-12%204%2012%208-6-4%2010z%22%20fill%3D%22%23d4560a%22/%3E%3Ccircle%20cx%3D%224%22%20cy%3D%2211%22%20r%3D%222.2%22%20fill%3D%22%23d4560a%22/%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%229%22%20r%3D%222.2%22%20fill%3D%22%23d4560a%22/%3E%3Ccircle%20cx%3D%2228%22%20cy%3D%2211%22%20r%3D%222.2%22%20fill%3D%22%23d4560a%22/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20d%3D%22M4%2024h24v3H4zM4%2021l4-10%208%206%204-12%204%2012%208-6-4%2010z%22%20fill%3D%22%23d4560a%22/%3E%3Ccircle%20cx%3D%224%22%20cy%3D%2211%22%20r%3D%222.2%22%20fill%3D%22%23d4560a%22/%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%229%22%20r%3D%222.2%22%20fill%3D%22%23d4560a%22/%3E%3Ccircle%20cx%3D%2228%22%20cy%3D%2211%22%20r%3D%222.2%22%20fill%3D%22%23d4560a%22/%3E%3C/svg%3E">
@@ -34,6 +35,8 @@
   --border:#2e2b22;
   --border2:#3a3628;
   --white:#1e1b14;
+  background:#16140f;
+  color:#e8e2d6;
 }
 *,*::before,*::after{transition:background-color 1.2s ease,border-color 1.2s ease,color 0.6s ease}
 .cursor{transition:none!important}
@@ -41,6 +44,7 @@
 .med-spark span{transition:background-color 1.2s ease!important}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:15px}
+:root.dark html,:root.dark body,html:has(body.dark-active){background:var(--bg)}
 .dash{max-width:1100px;margin:0 auto;padding:2rem 1.25rem}
 
 /* TOP */
@@ -111,7 +115,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:'DM
 .claude-send:hover{background:var(--orange2)}
 
 /* AKTIER */
-.card-stocks{grid-column:span 3;grid-row:2}
+.card-stocks{grid-column:span 4;grid-row:2}
 .stock-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
 .stock-row:last-child{border-bottom:none}
 .stock-ticker{font-family:'DM Mono',monospace;font-size:0.75rem;font-weight:500;color:var(--ink)}
@@ -136,7 +140,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:'DM
 .commute-link:hover{text-decoration:underline}
 
 /* NYHEDER */
-.card-news{grid-column:span 3;grid-row:2}
+.card-news{grid-column:span 2;grid-row:2}
 .news-item{padding:5px 0;border-bottom:1px solid var(--border)}
 .news-item:last-child{border-bottom:none}
 .news-src{font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--orange);margin-bottom:2px}
@@ -409,6 +413,12 @@ function applyTheme(){
   const sMins=sunsetHour*60+(window._sunsetMin||0);
   const isDark=totalMins<rMins||totalMins>=sMins;
   document.documentElement.classList.toggle('dark',isDark);
+  // Explicit background for Safari mobile overscroll area
+  const bg=isDark?'#16140f':'#f0ebe3';
+  document.body.style.background=bg;
+  document.documentElement.style.background=bg;
+  const meta=document.getElementById('theme-color-meta');
+  if(meta) meta.content=bg;
 }
 
 function tick(){
@@ -510,11 +520,14 @@ async function loadRegn(){
 
 /* ── AKTIER ── */
 const AKTIER=[
-  {sym:'AAPL',   fh:'AAPL',      name:'Apple',        cur:'USD'},
-  {sym:'NVDA',   fh:'NVDA',      name:'Nvidia',       cur:'USD'},
-  {sym:'NOVO-B', fh:'NOVO-B:CO', name:'Novo Nordisk', cur:'DKK'},
-  {sym:'MSFT',   fh:'MSFT',      name:'Microsoft',    cur:'USD'},
-  {sym:'VWS',    fh:'VWS:CO',    name:'Vestas',       cur:'DKK'},
+  {sym:'EL',    fh:'EL',      name:'Estée Lauder',  cur:'USD'},
+  {sym:'CSPX',  fh:'CSPX:LSE',name:'iShares S&P500',cur:'USD'},
+  {sym:'LUNG',  fh:'LUNG:ST', name:'Lundin Gold',   cur:'SEK'},
+  {sym:'MRVL',  fh:'MRVL',    name:'Marvell Tech',  cur:'USD'},
+  {sym:'MSFT',  fh:'MSFT',    name:'Microsoft',     cur:'USD'},
+  {sym:'NRG',   fh:'NRG',     name:'NRG Energy',    cur:'USD'},
+  {sym:'TSLA',  fh:'TSLA',    name:'Tesla',         cur:'USD'},
+  {sym:'VRT',   fh:'VRT',     name:'Vertiv',        cur:'USD'},
 ];
 async function loadAktier(){
   const body=document.getElementById('aktier-body');
