@@ -819,6 +819,41 @@ window.addEventListener('load',()=>{
   claudeVelkomstMedVejr();
 });
 
+function politiSted(titel, link){
+  // Kendte steder i København og omegn — søg i titel + URL slug
+  const haystack=(titel+' '+link).toLowerCase();
+  const steder=[
+    ['Østerbro',['østerbro','oe-sterbro','osterbro']],
+    ['Nørrebro',['nørrebro','norrebro','noerrebro']],
+    ['Vesterbro',['vesterbro']],
+    ['Amager',['amager','amagerbro','amager fælled','sundby']],
+    ['Indre By',['indre by','rådhuspladsen','stroget','strøget','kongens nytorv','nyhavn','gammeltorv','vestervold']],
+    ['Frederiksberg',['frederiksberg']],
+    ['Bispebjerg',['bispebjerg']],
+    ['Brønshøj',['brønshøj','bronshoj']],
+    ['Valby',['valby']],
+    ['Vanløse',['vanlose','vanløse']],
+    ['Sydhavn',['sydhavn','syd havn']],
+    ['Lufthavnen',['lufthavn','kastrup']],
+    ['Lyngby',['lyngby']],
+    ['Hellerup',['hellerup']],
+    ['Gentofte',['gentofte']],
+    ['Gladsaxe',['gladsaxe']],
+    ['Roskilde',['roskilde']],
+    ['Dragør',['dragoer','dragør']],
+    ['Hvidovre',['hvidovre']],
+    ['Brøndby',['brondby','brøndby']],
+    ['Albertslund',['albertslund']],
+    ['Ballerup',['ballerup']],
+    ['Lyngbyvej',['lyngbyvej']],
+    ['Amagerbro',['amagerbro']],
+  ];
+  for(const [navn,søg] of steder){
+    if(søg.some(s=>haystack.includes(s))) return navn;
+  }
+  return '';
+}
+
 /* ── KØBENHAVNS POLITI UPDATE ── */
 async function loadPoliti(){
   const body=document.getElementById('politi-body');
@@ -863,7 +898,9 @@ async function loadPoliti(){
       }
       const dato=pub?new Date(pub):null;
       const tid=dato&&!isNaN(dato)?dato.toLocaleDateString('da-DK',{day:'numeric',month:'short'})+' '+dato.toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'}):'';
-      html+=`<div class="politi-item"><div class="politi-time">${tid}</div><div class="politi-title"><a href="${link}" target="_blank" style="color:var(--ink);text-decoration:none">${titel}</a></div></div>`;
+      const sted=politiSted(titel,link);
+      const stedHtml=sted?` <span style="opacity:0.5">· ${sted}</span>`:'';
+      html+=`<div class="politi-item"><div class="politi-time">${tid}${stedHtml}</div><div class="politi-title"><a href="${link}" target="_blank" style="color:var(--ink);text-decoration:none">${titel}</a></div></div>`;
     });
     body.innerHTML=html;
   }catch(e){
