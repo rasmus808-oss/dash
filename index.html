@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dashboard">
+<title>Dashboard — København</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0ebe3;
+  --bg2:#e8e2d9;
+  --ink:#1a1814;
+  --ink2:#5a5550;
+  --ink3:#9a948e;
+  --orange:#d4560a;
+  --orange2:#f07030;
+  --border:#ccc5bb;
+  --border2:#b8b0a5;
+  --white:#fffcf8;
+}
+:root.dark{
+  --bg:#16140f;
+  --bg2:#1e1b14;
+  --ink:#e8e2d6;
+  --ink2:#a89f92;
+  --ink3:#6a6358;
+  --orange:#e06818;
+  --orange2:#f07030;
+  --border:#2e2b22;
+  --border2:#3a3628;
+  --white:#1e1b14;
+}
+*,*::before,*::after{transition:background-color 1.2s ease,border-color 1.2s ease,color 0.6s ease}
+.cursor{transition:none!important}
+.regn-bar-fill{transition:width 0.5s ease,background-color 1.2s ease!important}
+.med-spark span{transition:background-color 1.2s ease!important}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:15px}
+.dash{max-width:1100px;margin:0 auto;padding:2rem 1.25rem}
+
+/* TOP */
+.topbar{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+.clock{font-family:'Playfair Display',serif;font-size:3.5rem;font-weight:400;line-height:1;color:var(--ink);letter-spacing:-1px}
+.datestr{font-size:0.78rem;color:var(--ink3);margin-top:6px;letter-spacing:0.5px}
+.tagline{font-family:'Playfair Display',serif;font-size:1rem;color:var(--ink3);font-style:italic;text-align:right}
+.accent{height:2px;background:var(--orange);border-radius:1px;margin-bottom:1.5rem;width:48px}
+
+/* GRID — 3 rækker, alle kort i en række har samme høje */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+.row{display:contents} /* hver .row gør sine børn til grid-items med align-items:stretch */
+
+.card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:1.1rem 1.2rem;
+  position:relative;
+  /* Lige højde i samme grid-row via align-self:stretch */
+  align-self:stretch;
+  display:flex;
+  flex-direction:column;
+}
+.card-label{font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:0.75rem;flex-shrink:0}
+
+/* VEJR */
+.card-weather{grid-column:span 4;grid-row:1}
+.w-temp{font-family:'Playfair Display',serif;font-size:3.8rem;font-weight:400;line-height:1;color:var(--ink)}
+.w-icon{font-size:1.4rem;margin-right:6px;vertical-align:middle}
+.w-desc{font-size:0.78rem;color:var(--ink2);margin-top:6px}
+.forecast{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:auto;padding-top:0.9rem;border-top:1px solid var(--border)}
+.fc-item{text-align:center}
+.fc-time{font-family:'DM Mono',monospace;font-size:0.58rem;color:var(--ink3);margin-bottom:3px}
+.fc-icon{font-size:1rem;line-height:1.3}
+.fc-temp{font-size:0.7rem;color:var(--ink2)}
+
+/* REGN-INDEKS */
+.card-regn{grid-column:span 2;grid-row:1}
+.regn-index{font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:400;line-height:1;color:var(--ink);margin-top:0.2rem;letter-spacing:-1px}
+.regn-label{font-size:0.7rem;color:var(--ink3);margin-top:4px;line-height:1.5}
+.regn-bar-wrap{margin-top:auto;padding-top:0.9rem}
+.regn-bar-track{width:100%;height:4px;background:var(--bg2);border-radius:2px;overflow:hidden}
+.regn-bar-fill{height:100%;border-radius:2px;background:var(--orange);transition:width 0.5s}
+.regn-timeline{display:flex;gap:2px;margin-top:6px;align-items:flex-end;height:28px}
+.regn-timeline span{flex:1;border-radius:1px 1px 0 0;background:var(--border);min-height:2px;transition:background 0.3s}
+.regn-timeline span.wet{background:var(--orange)}
+.regn-ticks{display:flex;justify-content:space-between;margin-top:3px}
+.regn-ticks span{font-family:'DM Mono',monospace;font-size:0.55rem;color:var(--ink3)}
+
+/* CLAUDE */
+.card-claude{grid-column:span 6;grid-row:1}
+.claude-header{display:flex;align-items:center;gap:8px;margin-bottom:0.6rem;flex-shrink:0;padding-bottom:0.6rem;border-bottom:1px solid var(--border)}
+.claude-orb{width:14px;height:14px;border-radius:50%;background:var(--orange);flex-shrink:0}
+.claude-name{font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink3)}
+.chat-window{overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:4px;height:160px;flex-shrink:0;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.chat-window::-webkit-scrollbar{width:3px}
+.chat-window::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.chat-msg{max-width:88%;font-size:0.8rem;line-height:1.55;padding:6px 10px;border-radius:2px 10px 10px 10px;word-break:break-word}
+.chat-msg.user{align-self:flex-end;background:var(--orange);color:#fff;border-radius:10px 2px 10px 10px}
+.chat-msg.assistant{align-self:flex-start;background:var(--bg2);color:var(--ink)}
+.cursor{display:inline-block;width:2px;height:0.82em;background:var(--orange);vertical-align:middle;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.claude-input-row{display:flex;gap:6px;margin-top:0.6rem;flex-shrink:0}
+.claude-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-size:0.78rem;color:var(--ink);font-family:'DM Sans',sans-serif;outline:none}
+.claude-input:focus{border-color:var(--orange)}
+.claude-send{background:var(--orange);border:none;border-radius:4px;padding:6px 14px;color:#fff;font-size:0.75rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.claude-send:hover{background:var(--orange2)}
+
+/* AKTIER */
+.card-stocks{grid-column:span 3;grid-row:2}
+.stock-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
+.stock-row:last-child{border-bottom:none}
+.stock-ticker{font-family:'DM Mono',monospace;font-size:0.75rem;font-weight:500;color:var(--ink)}
+.stock-name{font-size:0.62rem;color:var(--ink3);margin-top:1px}
+.stock-price{font-family:'DM Mono',monospace;font-size:0.78rem;text-align:right}
+.stock-chg{font-size:0.62rem;text-align:right;margin-top:1px}
+.pos{color:var(--orange)}.neg{color:var(--ink3)}
+
+/* KRYPTO */
+.card-crypto{grid-column:span 2;grid-row:2}
+.crypto-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
+.crypto-row:last-child{border-bottom:none}
+.crypto-sym{font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink)}
+.crypto-chg{font-size:0.62rem;margin-top:1px}
+.crypto-price{font-family:'DM Mono',monospace;font-size:0.75rem;text-align:right}
+
+/* TRANSPORT */
+.card-commute{grid-column:span 2;grid-row:2}
+.commute-num{font-family:'Playfair Display',serif;font-size:2.4rem;color:var(--orange);line-height:1;margin-top:0.2rem}
+.commute-unit{font-size:0.68rem;color:var(--ink3);margin-top:4px;line-height:1.5}
+.commute-link{display:block;margin-top:auto;padding-top:0.9rem;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--orange);text-decoration:none;letter-spacing:1px;border-top:1px solid var(--border)}
+.commute-link:hover{text-decoration:underline}
+
+/* NYHEDER */
+.card-news{grid-column:span 3;grid-row:2}
+.news-item{padding:5px 0;border-bottom:1px solid var(--border)}
+.news-item:last-child{border-bottom:none}
+.news-src{font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--orange);margin-bottom:2px}
+.news-title{font-size:0.77rem;color:var(--ink2);line-height:1.4}
+.news-footer{margin-top:auto;padding-top:0.75rem}
+
+/* MEDICIN */
+.card-medicin{grid-column:span 2;grid-row:2}
+.med-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
+.med-row:last-child{border-bottom:none}
+.med-name{font-size:0.72rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
+.med-right{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.med-price{font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink)}
+.med-spark{display:flex;align-items:flex-end;gap:1.5px;height:14px}
+.med-spark span{display:inline-block;width:3px;background:var(--border);border-radius:1px}
+.med-spark span.latest{background:var(--orange)}
+.med-chg{font-size:0.58rem;font-family:'DM Mono',monospace}
+.med-footer{margin-top:auto;padding-top:0.75rem;border-top:1px solid var(--border)}
+
+/* FOLKETING + GENVEJE */
+.card-events{grid-column:span 6;grid-row:3}
+.event-item{padding:5px 0;border-bottom:1px solid var(--border)}
+.event-item:last-child{border-bottom:none}
+.event-time{font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:2px}
+.event-title{font-size:0.77rem;color:var(--ink);line-height:1.4}
+.card-links{grid-column:span 2;grid-row:3}
+.card-politi{grid-column:span 4;grid-row:3}
+.politi-item{padding:5px 0;border-bottom:1px solid var(--border)}
+.politi-item:last-child{border-bottom:none}
+.politi-time{font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--orange);margin-bottom:2px}
+.politi-title{font-size:0.77rem;color:var(--ink);line-height:1.4}
+.link-btn{display:block;padding:7px 0;border-bottom:1px solid var(--border);text-decoration:none;font-size:0.75rem;color:var(--ink2);transition:color 0.1s}
+.link-btn:last-child{border-bottom:none}
+.link-btn:hover{color:var(--orange)}
+.link-btn span{margin-right:6px;font-size:0.85rem}
+
+/* FÆLLES */
+.refresh-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;font-size:0.68rem;color:var(--ink3);padding:2px 5px;font-family:'DM Mono',monospace}
+.refresh-btn:hover{color:var(--orange)}
+
+/* ADMIN */
+.admin-btn{position:fixed;bottom:16px;right:16px;width:28px;height:28px;border-radius:50%;background:var(--border);border:none;cursor:pointer;opacity:0.35;transition:opacity 0.2s;z-index:100;display:flex;align-items:center;justify-content:center}
+.admin-btn:hover{opacity:0.85}
+.admin-btn svg{width:13px;height:13px;fill:var(--ink2)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--white);border:1px solid var(--border);border-radius:6px;padding:1.6rem 1.8rem;width:min(420px,92vw);position:relative}
+.modal h2{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:400;margin-bottom:1.2rem;color:var(--ink)}
+.modal-field{margin-bottom:0.9rem}
+.modal-field label{display:block;font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);margin-bottom:0.35rem}
+.modal-field input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:7px 10px;font-size:0.8rem;color:var(--ink);font-family:'DM Mono',monospace;outline:none}
+.modal-field input:focus{border-color:var(--orange)}
+.modal-field input[type=password]{letter-spacing:2px}
+.modal-row{display:flex;gap:8px;margin-top:1.2rem}
+.modal-save{flex:1;background:var(--orange);border:none;border-radius:4px;padding:8px;color:#fff;font-size:0.78rem;cursor:pointer;font-family:'DM Sans',sans-serif}
+.modal-save:hover{background:var(--orange2)}
+.modal-cancel{background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:0.78rem;cursor:pointer;color:var(--ink2);font-family:'DM Sans',sans-serif}
+.modal-close{position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;font-size:1rem;color:var(--ink3)}
+.modal-status{font-size:0.72rem;color:var(--orange);margin-top:0.6rem;min-height:1em;font-family:'DM Mono',monospace}
+@media(max-width:700px){
+  .card-weather,.card-regn,.card-claude,.card-stocks,.card-crypto,.card-commute,.card-news,.card-medicin,.card-events,.card-politi,.card-links{grid-column:span 12!important;grid-row:auto!important}
+  .clock{font-size:2.4rem}
+}
+</style>
+</head>
+<body>
+<div class="dash">
+  <div class="accent"></div>
+  <div class="topbar">
+    <div>
+      <div class="clock" id="clock">--:--</div>
+      <div class="datestr" id="datestr">Indlæser...</div>
+    </div>
+    <div class="tagline" id="greeting">God dag</div>
+  </div>
+
+  <div class="grid">
+
+    <!-- RÆK 1 -->
+    <div class="card card-weather">
+      <button class="refresh-btn" onclick="loadVejr()">↻</button>
+      <div class="card-label">Vejr · København</div>
+      <div><span class="w-icon" id="w-icon">—</span><span class="w-temp" id="w-temp">—°</span></div>
+      <div class="w-desc" id="w-desc">Indlæser...</div>
+      <div class="forecast" id="forecast"></div>
+    </div>
+
+    <div class="card card-regn">
+      <button class="refresh-btn" onclick="loadRegn()">↻</button>
+      <div class="card-label">Chance for regn · 45 min</div>
+      <div class="regn-index" id="regn-index">—</div>
+      <div class="regn-label" id="regn-label">Henter data...</div>
+      <div class="regn-bar-wrap">
+        <div class="regn-bar-track"><div class="regn-bar-fill" id="regn-bar" style="width:0%"></div></div>
+        <div class="regn-timeline" id="regn-timeline"></div>
+        <div class="regn-ticks"><span>Nu</span><span>15m</span><span>30m</span><span>45m</span></div>
+      </div>
+    </div>
+
+    <div class="card card-claude">
+      <div class="claude-header">
+        <div class="claude-orb"></div>
+        <span class="claude-name">Grok · Assistent</span>
+      </div>
+      <div class="chat-window" id="chat-window"></div>
+      <div class="claude-input-row">
+        <input class="claude-input" id="claude-input" type="text" placeholder="Spørg om noget..." onkeydown="if(event.key==='Enter')sendToClaude()">
+        <button class="claude-send" onclick="sendToClaude()">Send →</button>
+      </div>
+    </div>
+
+    <!-- RÆK 2 -->
+    <div class="card card-stocks">
+      <button class="refresh-btn" onclick="loadAktier()">↻</button>
+      <div class="card-label">Aktier · 15 min.</div>
+      <div id="aktier-body"><div style="font-size:0.75rem;color:var(--ink3);padding:0.5rem 0">Indlæser...</div></div>
+    </div>
+
+    <div class="card card-crypto">
+      <button class="refresh-btn" onclick="loadKrypto()">↻</button>
+      <div class="card-label">Krypto</div>
+      <div id="krypto-body"><div style="font-size:0.75rem;color:var(--ink3);padding:0.5rem 0">Indlæser...</div></div>
+    </div>
+
+    <div class="card card-commute">
+      <div class="card-label">Transport</div>
+      <div class="commute-num">20–30 <span style="font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:400">min</span></div>
+      <div class="commute-unit">til centrum · S-tog / Metro</div>
+      <a href="https://www.rejseplanen.dk" target="_blank" class="commute-link">REJSEPLANEN ↗</a>
+    </div>
+
+    <div class="card card-news">
+      <div class="card-label">Nyheder</div>
+      <div id="nyheder-body"><div style="font-size:0.75rem;color:var(--ink3)">Indlæser...</div></div>
+    </div>
+
+    <div class="card card-medicin">
+      <button class="refresh-btn" onclick="loadMedicin()">↻</button>
+      <div class="card-label">Medicin</div>
+      <div id="medicin-body"><div style="font-size:0.75rem;color:var(--ink3)">Indlæser...</div></div>
+      <div class="med-footer">
+        <a href="https://www.medicinpriser.dk" target="_blank" style="font-family:'DM Mono',monospace;font-size:0.58rem;color:var(--ink3);text-decoration:none;letter-spacing:1px">MEDICINPRISER.DK ↗</a>
+      </div>
+    </div>
+
+    <!-- RÆK 3 -->
+    <div class="card card-events">
+      <div class="card-label">Danmark · Folketing &amp; Kultur</div>
+      <div id="events-body">
+        <div class="event-item"><div class="event-time">I dag</div><div class="event-title">Spørgetid i Folketingssalen — spørgsmål til ministrene</div></div>
+        <div class="event-item"><div class="event-time">Løbende</div><div class="event-title">Udvalgsarbejde — Finansudvalget behandler §20-spørgsmål</div></div>
+        <div class="event-item"><div class="event-time">Kultur</div><div class="event-title">Se KulturKalender.dk for dagens arrangementer i København</div></div>
+        <div class="event-item"><div class="event-time">Kalender</div><div class="event-title"><a href="https://www.folketing.dk/aktuelt" target="_blank" style="color:var(--orange);text-decoration:none">folketing.dk/aktuelt ↗</a></div></div>
+      </div>
+    </div>
+
+    <div class="card card-politi">
+      <button class="refresh-btn" onclick="loadPoliti()">↻</button>
+      <div class="card-label">Københavns Politi · Update</div>
+      <div id="politi-body"><div style="font-size:0.75rem;color:var(--ink3)">Indlæser...</div></div>
+      <div style="margin-top:auto;padding-top:0.75rem;border-top:1px solid var(--border)">
+        <a href="https://politi.dk/nyhedsliste?district=Koebenhavns-Politi" target="_blank" style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--orange);text-decoration:none;letter-spacing:1px">POLITI.DK ↗</a>
+      </div>
+    </div>
+
+    <div class="card card-links">
+      <div class="card-label">Genveje</div>
+      <a href="https://www.pricerunner.dk/profile/alerts" target="_blank" class="link-btn"><span>🔔</span>PriceRunner</a>
+      <a href="https://calendar.google.com" target="_blank" class="link-btn"><span>📅</span>Kalender</a>
+      <a href="https://www.dr.dk/nyheder" target="_blank" class="link-btn"><span>📺</span>DR Nyheder</a>
+      <a href="https://www.folketing.dk" target="_blank" class="link-btn"><span>🏛</span>Folketing</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ── UR ── */
+/* ── HILSNER ── */
+const HILSNER = {
+  morgen: [
+    'God morgen', 'God morgen, Rasmus', 'Godt at se dig igen',
+    'En ny dag begynder', 'Morgenen er din', 'Klar til en ny dag?',
+    'Kaffen er varm, dagen er ung', 'Rasmus — god morgen',
+    'Hvad bringer dagen?', 'Tidlig fugl…',
+    'Dagens første skridt', 'En frisk start',
+  ],
+  formiddag: [
+    'God formiddag', 'God formiddag, Rasmus', 'Dagen er i gang',
+    'Formiddagen er din', 'Alt godt her?', 'Rasmus — hvad sker der?',
+    'Halvvejs til frokost', 'Arbejdet kalder',
+    'Hvad er på programmet?', 'En produktiv formiddag',
+    'Dagslyset er dit', 'Klart til handling',
+  ],
+  eftermiddag: [
+    'God eftermiddag', 'God eftermiddag, Rasmus', 'Halvvejs igennem dagen',
+    'Eftermiddagen er din', 'Et godt tidspunkt for kaffe',
+    'Rasmus — stadig i gang?', 'Det er nu eller aldrig',
+    'Solen er på vej ned', 'Eftermiddagslys',
+    'Hvad mangler du at nå?', 'Næsten i mål',
+    'En god eftermiddag til dig',
+  ],
+  aften: [
+    'God aften', 'God aften, Rasmus', 'Velkommen hjem',
+    'Dagen er ved at være forbi', 'Tid til at slappe af',
+    'Rasmus — en rolig aften', 'Aftenen er din',
+    'Solen er gået ned', 'Dagens arbejde er gjort',
+    'Hvad er der i aften?', 'En stille aften venter',
+    'Slap af og nyd aftenen',
+  ],
+  nat: [
+    'Sov godt', 'God nat, Rasmus', 'Hvil dig nu',
+    'Natten er stille', 'Rasmus — gå i seng',
+    'Morgendagen venter', 'Det er sent…',
+    'Drøm godt', 'Nattens ro er din',
+    'Stille timer', 'Verden sover næsten',
+  ],
+};
+
+let _hilsenIdx = {};
+function getHilsen(n) {
+  const h = n.getHours();
+  let pool;
+  if (h >= 5 && h < 10)       pool = HILSNER.morgen;
+  else if (h >= 10 && h < 12) pool = HILSNER.formiddag;
+  else if (h >= 12 && h < 18) pool = HILSNER.eftermiddag;
+  else if (h >= 18 && h < 23) pool = HILSNER.aften;
+  else                         pool = HILSNER.nat;
+
+  const key = h < 10 ? 'morgen' : h < 12 ? 'formiddag' : h < 18 ? 'eftermiddag' : h < 23 ? 'aften' : 'nat';
+  if (_hilsenIdx[key] === undefined) _hilsenIdx[key] = Math.floor(Math.random() * pool.length);
+  return pool[_hilsenIdx[key] % pool.length];
+}
+
+let _lastHilsenMin = -1;
+function tickHilsen(n) {
+  // Skift hilsen hvert 3. minut
+  const min = n.getMinutes();
+  if (Math.floor(min / 3) !== Math.floor(_lastHilsenMin / 3)) {
+    _lastHilsenMin = min;
+    const h = n.getHours();
+    const key = h < 10 ? 'morgen' : h < 12 ? 'formiddag' : h < 18 ? 'eftermiddag' : h < 23 ? 'aften' : 'nat';
+    _hilsenIdx[key] = (_hilsenIdx[key] === undefined ? 0 : _hilsenIdx[key] + 1);
+    document.getElementById('greeting').textContent = getHilsen(n);
+  }
+}
+
+/* ── SOLNEDGANG / MØRKt TEMA ── */
+let sunriseHour=6, sunsetHour=20; // fallback, opdateres fra Open-Meteo
+
+async function loadSunTimes(){
+  try{
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=55.6761&longitude=12.5683&daily=sunrise,sunset&timezone=Europe%2FCopenhagen&forecast_days=1');
+    const d=await r.json();
+    if(d.daily&&d.daily.sunrise&&d.daily.sunset){
+      sunriseHour=parseInt(d.daily.sunrise[0].split('T')[1].split(':')[0]);
+      sunsetHour=parseInt(d.daily.sunset[0].split('T')[1].split(':')[0]);
+      // Store sunset minute too for precision
+      window._sunriseMin=parseInt(d.daily.sunrise[0].split('T')[1].split(':')[1]);
+      window._sunsetMin=parseInt(d.daily.sunset[0].split('T')[1].split(':')[1]);
+    }
+  }catch(e){}
+  applyTheme();
+}
+
+function applyTheme(){
+  const n=new Date();
+  const totalMins=n.getHours()*60+n.getMinutes();
+  const rMins=sunriseHour*60+(window._sunriseMin||0);
+  const sMins=sunsetHour*60+(window._sunsetMin||0);
+  const isDark=totalMins<rMins||totalMins>=sMins;
+  document.documentElement.classList.toggle('dark',isDark);
+}
+
+function tick(){
+  const n=new Date();
+  document.getElementById('clock').textContent=n.toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('datestr').textContent=n.toLocaleDateString('da-DK',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  tickHilsen(n);
+  applyTheme();
+}
+tick();setInterval(tick,1000);
+loadSunTimes();
+
+/* ── VEJR (Open-Meteo) ── */
+const WMO={0:'Klart',1:'Overvejende klart',2:'Delvist skyet',3:'Overskyet',45:'Tåge',48:'Iståge',51:'Let støvregn',53:'Støvregn',55:'Kraftig støvregn',61:'Let regn',63:'Regn',65:'Kraftig regn',71:'Let sne',73:'Sne',75:'Kraftig sne',80:'Regnbyger',81:'Regnbyger',82:'Kraftige byger',95:'Tordenvejr',96:'Tordenvejr',99:'Tordenvejr'};
+const WICON={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌦️',63:'🌧️',65:'🌧️',71:'🌨️',73:'❄️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
+
+async function loadVejr(){
+  try{
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=55.6761&longitude=12.5683&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,precipitation&hourly=temperature_2m,weathercode,precipitation_probability&timezone=Europe%2FCopenhagen&forecast_days=1&wind_speed_unit=ms');
+    const d=await r.json();
+    const t=Math.round(d.current.temperature_2m);const c=d.current.weathercode;
+    document.getElementById('w-temp').textContent=t+'°C';
+    document.getElementById('w-icon').textContent=WICON[c]||'🌡️';
+    const windMs=d.current.windspeed_10m.toFixed(1);
+    const windDir=d.current.winddirection_10m;
+    const dirs=['N','NNØ','NØ','ØNØ','Ø','ØSØ','SØ','SSØ','S','SSV','SV','VSV','V','VNV','NV','NNV'];
+    const dirLabel=dirs[Math.round(windDir/22.5)%16];
+    document.getElementById('w-desc').textContent=(WMO[c]||'Ukendt')+' · '+windMs+' m/s fra '+dirLabel;
+    const hrs=d.hourly;const now=new Date().getHours();
+    let fc='';let shown=0;
+    for(let i=0;i<hrs.time.length&&shown<6;i++){
+      const h=parseInt(hrs.time[i].split('T')[1]);
+      if(h>=now){fc+=`<div class="fc-item"><div class="fc-time">${String(h).padStart(2,'0')}</div><div class="fc-icon">${WICON[hrs.weathercode[i]]||'?'}</div><div class="fc-temp">${Math.round(hrs.temperature_2m[i])}°</div></div>`;shown++;}
+    }
+    document.getElementById('forecast').innerHTML=fc;
+    return d.current;
+  }catch(e){document.getElementById('w-desc').textContent='Kunne ikke hente vejr';}
+}
+
+/* ── REGN-INDEKS (Yr.no Nowcast) ── */
+async function loadRegn(){
+  try{
+    const r=await fetch(
+      'https://api.met.no/weatherapi/nowcast/2.0/complete?lat=55.6761&lon=12.5683',
+      {headers:{'User-Agent':'PersonalDashboard/1.0 github.com/personal'}}
+    );
+    const d=await r.json();
+    const series=d.properties.timeseries;
+    const now=Date.now();
+
+    // Filtrer de næste ~45 min (nowcast har 5-min intervaller)
+    const relevant=series.filter(s=>{
+      const t=new Date(s.time).getTime();
+      return t>=now-5*60*1000 && t<=now+45*60*1000;
+    }).slice(0,9); // max 9 punkter (nu + 8×5min = 40min)
+
+    if(!relevant.length){
+      document.getElementById('regn-label').textContent='Ingen nowcast data';
+      return;
+    }
+
+    const precips=relevant.map(s=>s.data.instant.details.precipitation_rate||0);
+    const maxPrec=Math.max(...precips);
+    const avgPrec=precips.reduce((a,b)=>a+b,0)/precips.length;
+
+    // Sandsynlighed for regn: baseret på antal slots med nedbør > 0.1 mm/h
+    const wetSlots=precips.filter(p=>p>0.1).length;
+    const chancePct=Math.round((wetSlots/precips.length)*100);
+
+    // Indeks 0-10
+    const idx=Math.min(10,Math.round(avgPrec*5+chancePct/20));
+
+    // Beskrivelse
+    let label='Tørt vejr';
+    if(chancePct>70&&maxPrec>2)label='Kraftig regn ventes';
+    else if(chancePct>50)label='Regn sandsynlig';
+    else if(chancePct>25)label='Mulig regn';
+    else if(chancePct>10)label='Let mulighed for regn';
+
+    document.getElementById('regn-index').textContent=chancePct+'%';
+    document.getElementById('regn-label').textContent=label;
+    document.getElementById('regn-bar').style.width=chancePct+'%';
+    document.getElementById('regn-bar').style.background=chancePct>50?'var(--orange)':'var(--border2)';
+
+    // Mini-timeline søjler
+    const maxH=Math.max(maxPrec,0.1);
+    const timeline=document.getElementById('regn-timeline');
+    timeline.innerHTML=precips.map((p,i)=>{
+      const h=Math.max(2,Math.round((p/maxH)*26));
+      const wet=p>0.1?'wet':'';
+      return `<span class="${wet}" style="height:${h}px" title="${p.toFixed(2)} mm/h"></span>`;
+    }).join('');
+
+  }catch(e){
+    document.getElementById('regn-label').textContent='Yr.no ikke tilgængelig';
+    document.getElementById('regn-index').textContent='—';
+  }
+}
+
+/* ── AKTIER ── */
+const AKTIER=[
+  {sym:'AAPL',name:'Apple'},
+  {sym:'NVDA',name:'Nvidia'},
+  {sym:'NOVO-B.CO',name:'Novo Nordisk'},
+  {sym:'MSFT',name:'Microsoft'},
+  {sym:'VWS.CO',name:'Vestas'},
+];
+async function loadAktier(){
+  const body=document.getElementById('aktier-body');
+  body.innerHTML='<div style="font-size:0.75rem;color:var(--ink3)">Henter...</div>';
+  let html='';
+  for(const s of AKTIER){
+    try{
+      const r=await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${s.sym}?interval=1d&range=2d`);
+      const d=await r.json();const res=d.chart.result[0];
+      const closes=res.indicators.quote[0].close.filter(Boolean);
+      const price=closes[closes.length-1];const prev=closes[closes.length-2]||price;
+      const chg=price-prev;const pct=(chg/prev*100);
+      const cls=chg>=0?'pos':'neg';const arr=chg>=0?'↑':'↓';
+      const cur=s.sym.endsWith('.CO')?'DKK':'USD';
+      html+=`<div class="stock-row"><div><div class="stock-ticker">${s.sym.replace('.CO','')}</div><div class="stock-name">${s.name}</div></div><div><div class="stock-price ${cls}">${price.toFixed(0)} <span style="font-size:0.58rem;opacity:0.4">${cur}</span></div><div class="stock-chg ${cls}">${arr} ${Math.abs(pct).toFixed(1)}%</div></div></div>`;
+    }catch(e){html+=`<div class="stock-row"><div class="stock-ticker">${s.sym.replace('.CO','')}</div><div style="font-size:0.65rem;color:var(--ink3)">—</div></div>`;}
+  }
+  body.innerHTML=html;
+}
+
+/* ── KRYPTO ── */
+async function loadKrypto(){
+  try{
+    const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true');
+    const d=await r.json();
+    const coins=[{id:'bitcoin',sym:'BTC'},{id:'ethereum',sym:'ETH'},{id:'solana',sym:'SOL'}];
+    let html='';
+    for(const c of coins){
+      const info=d[c.id];if(!info)continue;
+      const chg=info.usd_24h_change;const cls=chg>=0?'pos':'neg';const arr=chg>=0?'↑':'↓';
+      html+=`<div class="crypto-row"><div><div class="crypto-sym">${c.sym}</div><div class="crypto-chg ${cls}">${arr} ${Math.abs(chg).toFixed(1)}%</div></div><div class="crypto-price">$${Math.round(info.usd).toLocaleString('da-DK')}</div></div>`;
+    }
+    document.getElementById('krypto-body').innerHTML=html;
+  }catch(e){document.getElementById('krypto-body').innerHTML='<div style="font-size:0.72rem;color:var(--ink3)">Kunne ikke hente</div>';}
+}
+
+/* ── NYHEDER ── */
+/* ── NYHEDER (live RSS via rss2json) ── */
+const FEEDS = [
+  {src:'Berlingske', url:'https://www.berlingske.dk/rss/seneste-nyt', link:'https://www.berlingske.dk'},
+  {src:'JP',         url:'https://jyllands-posten.dk/rss/overblik', link:'https://jyllands-posten.dk'},
+  {src:'BT',         url:'https://www.bt.dk/seneste-nyt/rss', link:'https://www.bt.dk'},
+  {src:'TV 2',       url:'https://feeds.tv2.dk/news/rss', link:'https://nyheder.tv2.dk'},
+  {src:'DR',         url:'https://www.dr.dk/nyheder/service/feeds/allenyheder', link:'https://www.dr.dk/nyheder'},
+];
+
+async function loadNyheder(){
+  const body = document.getElementById('nyheder-body');
+  const proxy = 'https://api.rss2json.com/v1/api.json?rss_url=';
+  let all = [];
+
+  for(const feed of FEEDS){
+    try{
+      const r = await fetch(proxy + encodeURIComponent(feed.url) + '&count=3');
+      const d = await r.json();
+      if(d.items){
+        d.items.slice(0,2).forEach(item=>{
+          all.push({src:feed.src, title:item.title.trim(), link:item.link||feed.link});
+        });
+      }
+    }catch(e){}
+  }
+
+  if(!all.length){
+    body.innerHTML='<div style="font-size:0.75rem;color:var(--ink3)">Nyheder ikke tilgængelige</div>';
+    return;
+  }
+
+  // Prioritér rækkefølge: Berlingske, JP, BT, TV2, DR — én fra hver, så anden runde
+  const order = ['Berlingske','JP','BT','TV 2','DR'];
+  let sorted = [];
+  for(const src of order){
+    const item = all.find(a=>a.src===src && !sorted.includes(a));
+    if(item) sorted.push(item);
+  }
+  for(const src of order){
+    const item = all.find(a=>a.src===src && !sorted.includes(a));
+    if(item) sorted.push(item);
+  }
+  // Tilføj evt. resterende
+  all.forEach(a=>{ if(!sorted.includes(a)) sorted.push(a); });
+
+  let html = '';
+  sorted.slice(0,5).forEach(s=>{
+    html += `<div class="news-item"><a href="${s.link}" target="_blank" style="text-decoration:none"><div class="news-src">${s.src}</div><div class="news-title">${s.title}</div></a></div>`;
+  });
+  html += `<div class="news-footer"><a href="https://www.berlingske.dk" target="_blank" style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--orange);text-decoration:none;letter-spacing:1px">SENESTE NYHEDER ↗</a></div>`;
+  body.innerHTML = html;
+}
+loadNyheder();
+
+/* ── JSONP helper ── */
+function jsonpFetch(url){
+  return new Promise((resolve,reject)=>{
+    const cb='_jsonp_'+Date.now()+'_'+Math.floor(Math.random()*1e6);
+    const script=document.createElement('script');
+    window[cb]=function(data){
+      delete window[cb];
+      document.head.removeChild(script);
+      resolve(data);
+    };
+    script.onerror=()=>{
+      delete window[cb];
+      document.head.removeChild(script);
+      reject(new Error('JSONP failed'));
+    };
+    script.src=url+'&callback='+cb;
+    document.head.appendChild(script);
+    setTimeout(()=>{
+      if(window[cb]){delete window[cb];document.head.removeChild(script);reject(new Error('JSONP timeout'));}
+    },8000);
+  });
+}
+
+/* ── MEDICIN (localStorage historik + sparkline) ── */
+const MEDICIN_VNRS=[
+  {vnr:'528076',label:''},
+  {vnr:'186710',label:''},
+  {vnr:'561237',label:''},
+];
+const MED_KEY='medicinprishistorik_v1';
+function getMedHistory(){try{return JSON.parse(localStorage.getItem(MED_KEY)||'{}')}catch(e){return {}}}
+function saveMedHistory(h){try{localStorage.setItem(MED_KEY,JSON.stringify(h))}catch(e){}}
+
+function sparklineHTML(prices){
+  if(!prices||prices.length<1)return '';
+  const min=Math.min(...prices),max=Math.max(...prices),range=max-min||1;
+  return prices.map((p,i)=>{
+    const h=Math.max(2,Math.round(((p-min)/range)*12)+2);
+    return `<span${i===prices.length-1?' class="latest"':''} style="height:${h}px" title="${p.toFixed(0)} kr"></span>`;
+  }).join('');
+}
+
+function arrowSVG(chg){
+  const up=chg>=0;
+  const pts=up?'5,1 9,8 1,8':'5,13 9,6 1,6';
+  const col=up?'#d4560a':'#3a9e5f';
+  const pct=Math.abs(chg).toFixed(1)+'%';
+  return '<svg width="10" height="14" viewBox="0 0 10 14" style="flex-shrink:0;margin-left:4px" title="'+pct+'"><polygon points="'+pts+'" fill="'+col+'"/></svg>';
+}
+
+async function loadMedicin(){
+  const body=document.getElementById('medicin-body');
+  const history=getMedHistory();
+  const today=new Date().toISOString().slice(0,10);
+  let html='';
+  for(const med of MEDICIN_VNRS){
+    if(!history[med.vnr])history[med.vnr]=[];
+    try{
+      const d=await jsonpFetch(`https://api.medicinpriser.dk/v1/produkter/detaljer/${med.vnr}?format=jsonp`);
+      const navn=med.label||(d.Navn||'Vnr '+med.vnr);
+      const aup=parseFloat(d.PrisPrPakning!=null?d.PrisPrPakning:(d.AIP!=null?d.AIP:0));
+      if(aup>0){
+        const h=history[med.vnr];
+        if(!h.length||h[h.length-1].d!==today){h.push({d:today,p:aup});if(h.length>90)h.shift();}
+        const prices=h.map(x=>x.p);
+        const prev=h.length>1?h[h.length-2].p:null;
+        const chg=prev?((aup-prev)/prev*100):null;
+        const chgHtml=chg!==null?arrowSVG(chg):''
+        html+=`<div class="med-row"><div class="med-name" title="${navn}">${navn}</div><div class="med-right"><div class="med-spark">${sparklineHTML(prices)}</div>${chgHtml}<div class="med-price">${Math.round(aup)} kr</div></div></div>`;
+      }else{
+        html+=`<div class="med-row"><div class="med-name">${med.vnr}</div><div class="med-right"><div class="med-price" style="color:var(--ink3)">—</div></div></div>`;
+      }
+    }catch(e){
+      const h=history[med.vnr];
+      if(h&&h.length){
+        const last=h[h.length-1];const prices=h.map(x=>x.p);
+        html+=`<div class="med-row"><div class="med-name" style="color:var(--ink3)">${med.vnr}</div><div class="med-right"><div class="med-spark">${sparklineHTML(prices)}</div><div class="med-price">${Math.round(last.p)} kr</div></div></div>`;
+      }else{
+        html+=`<div class="med-row"><div class="med-name">${med.vnr}</div><div class="med-right"><div class="med-price" style="color:var(--ink3)">—</div></div></div>`;
+      }
+    }
+  }
+  saveMedHistory(history);
+  body.innerHTML=html||'<div style="font-size:0.75rem;color:var(--ink3)">Ingen data</div>';
+}
+
+/* ── CHAT ── */
+const conversationHistory=[];
+let isTyping=false;
+let vejrSnapshot=null;
+
+function chatScroll(){
+  const w=document.getElementById('chat-window');
+  if(w) w.scrollTop=w.scrollHeight;
+}
+
+function addMsg(role,text,typing=false){
+  const w=document.getElementById('chat-window');
+  const div=document.createElement('div');
+  div.className='chat-msg '+role;
+  if(typing){
+    const cur=document.createElement('span');
+    cur.className='cursor';div.appendChild(cur);
+    w.appendChild(div);chatScroll();
+    // type into this div
+    let i=0;
+    const iv=setInterval(()=>{
+      if(i<text.length){div.insertBefore(document.createTextNode(text[i]),cur);i++;chatScroll();}
+      else{clearInterval(iv);cur.remove();}
+    },14);
+  } else {
+    div.textContent=text;
+    w.appendChild(div);chatScroll();
+  }
+  return div;
+}
+
+async function claudeChat(userMsg, silent=false){
+  if(isTyping)return;isTyping=true;
+  if(!silent) addMsg('user', userMsg);
+  conversationHistory.push({role:'user',content:userMsg});
+
+  const apiKey=localStorage.getItem('cfg_grok')||'';
+  if(!apiKey){
+    addMsg('assistant','Tilføj din Grok API-nøgle via tandhjulet nederst til højre.',true);
+    isTyping=false;return;
+  }
+
+  // Vis typing indicator
+  const w=document.getElementById('chat-window');
+  const typing=document.createElement('div');
+  typing.className='chat-msg assistant';
+  typing.innerHTML='<span class="cursor"></span>';
+  w.appendChild(typing);chatScroll();
+
+  try{
+    const res=await fetch('https://api.x.ai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({
+        model:'grok-3-mini',
+        max_tokens:350,
+        messages:[
+          {role:'system',content:'Du er en venlig dansk personlig assistent på brugerens dashboard i København. Svar altid på dansk. Vær kort, varm og konkret — max 3 sætninger. Når du kender vejret, giv altid en specifik påklædningsanbefaling.'},
+          ...conversationHistory
+        ]
+      })
+    });
+    const data=await res.json();
+    const reply=data.choices?.[0]?.message?.content||'Beklager, ingen svar.';
+    conversationHistory.push({role:'assistant',content:reply});
+    // Replace typing indicator with typed reply
+    w.removeChild(typing);
+    addMsg('assistant',reply,true);
+  }catch(e){
+    w.removeChild(typing);
+    addMsg('assistant','Beklager — kunne ikke oprette forbindelse til Grok.',true);
+  }
+  finally{isTyping=false;}
+}
+
+function sendToClaude(){
+  const inp=document.getElementById('claude-input');
+  const msg=inp.value.trim();if(!msg||isTyping)return;
+  inp.value='';claudeChat(msg);
+}
+
+async function claudeVelkomstMedVejr(){
+  const n=new Date();const h=n.getHours();
+  let tid='god dag';
+  if(h<10)tid='god morgen';else if(h>=10&&h<12)tid='god formiddag';
+  else if(h>=12&&h<17)tid='god eftermiddag';else if(h>=17&&h<22)tid='god aften';else tid='god nat';
+  const dato=n.toLocaleDateString('da-DK',{weekday:'long',day:'numeric',month:'long'});
+  let vejrTekst='Vejrdata utilgængeligt.';
+  try{
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=55.6761&longitude=12.5683&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,precipitation&hourly=temperature_2m,weathercode,precipitation_probability&timezone=Europe%2FCopenhagen&forecast_days=1&wind_speed_unit=ms');
+    const d=await r.json();
+    const cur=d.current;const code=cur.weathercode;
+    const temp=Math.round(cur.temperature_2m);const vind=Math.round(cur.windspeed_10m);
+    const now2=n.getHours();const hrs=d.hourly;
+    let regn=false;let minTemp=99;let maxTemp=-99;
+    for(let i=0;i<hrs.time.length;i++){
+      const hh=parseInt(hrs.time[i].split('T')[1]);
+      if(hh>=now2&&hh<=now2+8){
+        if((hrs.precipitation_probability[i]||0)>40)regn=true;
+        if(hrs.temperature_2m[i]<minTemp)minTemp=Math.round(hrs.temperature_2m[i]);
+        if(hrs.temperature_2m[i]>maxTemp)maxTemp=Math.round(hrs.temperature_2m[i]);
+      }
+    }
+    vejrTekst=`Aktuelt i København: ${temp}°C, ${WMO[code]||'ukendt vejr'}, vind ${vind} km/t. Dagens temp: ${minTemp}–${maxTemp}°C. ${regn?'Der er risiko for regn.':'Ingen væsentlig nedbør ventet.'}`;
+  }catch(e){}
+  claudeChat(`Det er ${dato}, ${tid}. ${vejrTekst} Sig ${tid}, og giv en konkret og venlig påklædningsanbefaling. Max 2-3 sætninger.`, true);
+}
+
+/* ── START ── */
+window.addEventListener('load',()=>{
+  document.getElementById('greeting').textContent=getHilsen(new Date());
+  loadVejr();
+  loadRegn();
+  loadAktier();
+  loadKrypto();
+  loadMedicin();
+  claudeVelkomstMedVejr();
+});
+
+/* ── KØBENHAVNS POLITI UPDATE ── */
+async function loadPoliti(){
+  const body=document.getElementById('politi-body');
+  const feed='https://via.ritzau.dk/rss/short-messages/latest?publisherId=90685';
+  // Prøv tre metoder i rækkefølge
+  const proxies=[
+    'https://corsproxy.io/?'+encodeURIComponent(feed),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(feed),
+    'https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(feed)+'&count=5',
+  ];
+  let xml=null, items=[], useJson=false;
+  for(const url of proxies){
+    try{
+      const r=await fetch(url,{cache:'no-store'});
+      if(!r.ok) continue;
+      const txt=await r.text();
+      // rss2json returnerer JSON
+      if(url.includes('rss2json')){
+        const d=JSON.parse(txt);
+        if(d.items&&d.items.length){ useJson=true; items=d.items; break; }
+        continue;
+      }
+      const parser=new DOMParser();
+      const doc=parser.parseFromString(txt,'text/xml');
+      const found=[...doc.querySelectorAll('item')];
+      if(found.length){ items=found; break; }
+    }catch(e){ continue; }
+  }
+  if(!items.length){body.innerHTML='<div style="font-size:0.75rem;color:var(--ink3)">Ingen meldinger tilgængelige</div>';return;}
+  try{
+    let html='';
+    items.slice(0,5).forEach(item=>{
+      let titel,link,pub;
+      if(useJson){
+        titel=(item.title||'').trim();
+        link=item.link||'';
+        pub=item.pubDate||'';
+      }else{
+        titel=(item.querySelector('title')?.textContent||'').trim();
+        link=item.querySelector('link')?.textContent||'';
+        pub=item.querySelector('pubDate')?.textContent||'';
+      }
+      const dato=pub?new Date(pub):null;
+      const tid=dato&&!isNaN(dato)?dato.toLocaleDateString('da-DK',{day:'numeric',month:'short'})+' '+dato.toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'}):'';
+      html+=`<div class="politi-item"><div class="politi-time">${tid}</div><div class="politi-title"><a href="${link}" target="_blank" style="color:var(--ink);text-decoration:none">${titel}</a></div></div>`;
+    });
+    body.innerHTML=html;
+  }catch(e){
+    body.innerHTML='<div style="font-size:0.75rem;color:var(--ink3)">Fejl ved visning</div>';
+  }
+}
+loadPoliti();
+
+setInterval(loadVejr,10*60*1000);
+setInterval(loadRegn,5*60*1000);
+setInterval(loadAktier,5*60*1000);
+setInterval(loadKrypto,5*60*1000);
+setInterval(loadNyheder,15*60*1000);
+setInterval(loadPoliti,10*60*1000);
+setInterval(loadSunTimes,60*60*1000); // opdater soltider hver time
+</script>
+
+<!-- ADMIN KNAP -->
+<button class="admin-btn" onclick="document.getElementById('adminModal').classList.add('open')" title="Indstillinger">
+  <svg viewBox="0 0 20 20"><path d="M10 2a1 1 0 00-1 1v.5A6 6 0 004.5 9H4a1 1 0 000 2h.5A6 6 0 009 16.5v.5a1 1 0 002 0v-.5A6 6 0 0015.5 11H16a1 1 0 000-2h-.5A6 6 0 0011 3.5V3a1 1 0 00-1-1zm0 4a4 4 0 110 8 4 4 0 010-8zm0 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
+</button>
+
+<!-- ADMIN MODAL -->
+<div class="modal-overlay" id="adminModal" onclick="if(event.target===this)closeAdmin()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAdmin()">✕</button>
+    <h2>Indstillinger</h2>
+    <div class="modal-field">
+      <label>Grok API-nøgle (xAI)</label>
+      <input type="password" id="cfg-grok" placeholder="xai-…" autocomplete="off">
+    </div>
+    <div class="modal-field">
+      <label>Finnhub API-nøgle (aktier)</label>
+      <input type="password" id="cfg-finnhub" placeholder="xxxxxxxxxxxxxxxx" autocomplete="off">
+    </div>
+    <div class="modal-row">
+      <button class="modal-save" onclick="saveAdmin()">Gem nøgler</button>
+      <button class="modal-cancel" onclick="closeAdmin()">Annuller</button>
+    </div>
+    <div class="modal-status" id="admin-status"></div>
+  </div>
+</div>
+
+<script>
+function loadAdminCfg(){
+  const grok=localStorage.getItem('cfg_grok')||'';
+  const fh=localStorage.getItem('cfg_finnhub')||'';
+  document.getElementById('cfg-grok').value=grok;
+  document.getElementById('cfg-finnhub').value=fh;
+}
+function saveAdmin(){
+  const grok=document.getElementById('cfg-grok').value.trim();
+  const fh=document.getElementById('cfg-finnhub').value.trim();
+  if(grok) localStorage.setItem('cfg_grok',grok);
+  if(fh)   localStorage.setItem('cfg_finnhub',fh);
+  document.getElementById('admin-status').textContent='Gemt ✓';
+  setTimeout(()=>{
+    document.getElementById('admin-status').textContent='';
+    closeAdmin();
+    if(fh) loadAktier();
+  },1000);
+}
+function closeAdmin(){
+  document.getElementById('adminModal').classList.remove('open');
+}
+document.getElementById('adminModal').addEventListener('keydown',e=>{
+  if(e.key==='Escape') closeAdmin();
+});
+window.addEventListener('load',loadAdminCfg,{once:true});
+</script>
+</body>
+</html>
