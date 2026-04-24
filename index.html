@@ -577,18 +577,18 @@ async function loadKrypto(){
 /* ── NYHEDER ── */
 /* ── NYHEDER (live RSS via rss2json) ── */
 const FEEDS = [
-  {src:'Berlingske', url:'https://www.berlingske.dk/rss/seneste-nyt', link:'https://www.berlingske.dk'},
-  {src:'JP',         url:'https://jyllands-posten.dk/rss/overblik', link:'https://jyllands-posten.dk'},
-  {src:'BT',         url:'https://www.bt.dk/seneste-nyt/rss', link:'https://www.bt.dk'},
-  {src:'TV 2',       url:'https://feeds.tv2.dk/news/rss', link:'https://nyheder.tv2.dk'},
-  {src:'DR',         url:'https://www.dr.dk/nyheder/service/feeds/allenyheder', link:'https://www.dr.dk/nyheder'},
+  {src:'DR',         url:'https://www.dr.dk/nyheder/service/feeds/allenyheder',   link:'https://www.dr.dk/nyheder'},
+  {src:'TV 2',       url:'https://feeds.tv2.dk/news/rss',                          link:'https://nyheder.tv2.dk'},
+  {src:'Politiken',  url:'https://politiken.dk/feed/rss2',                         link:'https://politiken.dk'},
+  {src:'Ekstra Bl.', url:'https://ekstrabladet.dk/nyheder/rss',                   link:'https://ekstrabladet.dk'},
+  {src:'Information',url:'https://www.information.dk/feed',                        link:'https://www.information.dk'},
 ];
 
 async function loadNyheder(){
   const body=document.getElementById('nyheder-body');
   // allorigins virker fra file:// og https://
   const proxy='https://api.allorigins.win/raw?url=';
-  const order=['Berlingske','JP','BT','TV 2','DR'];
+  const order=['DR','TV 2','Politiken','Ekstra Bl.','Information'];
   let all=[];
 
   for(const feed of FEEDS){
