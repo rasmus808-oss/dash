@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Dashboard">
 <title>Dashboard — København</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20d%3D%22M4%2024h24v3H4zM4%2021l4-10%208%206%204-12%204%2012%208-6-4%2010z%22%20fill%3D%22%23d4560a%22/%3E%3Ccircle%20cx%3D%224%22%20cy%3D%2211%22%20r%3D%222.2%22%20fill%3D%22%23d4560a%22/%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%229%22%20r%3D%222.2%22%20fill%3D%22%23d4560a%22/%3E%3Ccircle%20cx%3D%2228%22%20cy%3D%2211%22%20r%3D%222.2%22%20fill%3D%22%23d4560a%22/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20d%3D%22M4%2024h24v3H4zM4%2021l4-10%208%206%204-12%204%2012%208-6-4%2010z%22%20fill%3D%22%23d4560a%22/%3E%3Ccircle%20cx%3D%224%22%20cy%3D%2211%22%20r%3D%222.2%22%20fill%3D%22%23d4560a%22/%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%229%22%20r%3D%222.2%22%20fill%3D%22%23d4560a%22/%3E%3Ccircle%20cx%3D%2228%22%20cy%3D%2211%22%20r%3D%222.2%22%20fill%3D%22%23d4560a%22/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -560,19 +562,24 @@ const FEEDS = [
 ];
 
 async function loadNyheder(){
-  const body = document.getElementById('nyheder-body');
-  const proxy = 'https://api.rss2json.com/v1/api.json?rss_url=';
-  let all = [];
+  const body=document.getElementById('nyheder-body');
+  // allorigins virker fra file:// og https://
+  const proxy='https://api.allorigins.win/raw?url=';
+  const order=['Berlingske','JP','BT','TV 2','DR'];
+  let all=[];
 
   for(const feed of FEEDS){
     try{
-      const r = await fetch(proxy + encodeURIComponent(feed.url) + '&count=3');
-      const d = await r.json();
-      if(d.items){
-        d.items.slice(0,2).forEach(item=>{
-          all.push({src:feed.src, title:item.title.trim(), link:item.link||feed.link});
-        });
-      }
+      const r=await fetch(proxy+encodeURIComponent(feed.url),{cache:'no-store'});
+      if(!r.ok) continue;
+      const txt=await r.text();
+      const doc=new DOMParser().parseFromString(txt,'text/xml');
+      const items=[...doc.querySelectorAll('item')];
+      items.slice(0,2).forEach(item=>{
+        const title=(item.querySelector('title')?.textContent||'').trim();
+        const link=item.querySelector('link')?.textContent||feed.link;
+        if(title) all.push({src:feed.src,title,link});
+      });
     }catch(e){}
   }
 
@@ -581,26 +588,17 @@ async function loadNyheder(){
     return;
   }
 
-  // Prioritér rækkefølge: Berlingske, JP, BT, TV2, DR — én fra hver, så anden runde
-  const order = ['Berlingske','JP','BT','TV 2','DR'];
-  let sorted = [];
-  for(const src of order){
-    const item = all.find(a=>a.src===src && !sorted.includes(a));
-    if(item) sorted.push(item);
-  }
-  for(const src of order){
-    const item = all.find(a=>a.src===src && !sorted.includes(a));
-    if(item) sorted.push(item);
-  }
-  // Tilføj evt. resterende
-  all.forEach(a=>{ if(!sorted.includes(a)) sorted.push(a); });
+  let sorted=[];
+  for(const src of order){ const a=all.find(x=>x.src===src&&!sorted.includes(x)); if(a) sorted.push(a); }
+  for(const src of order){ const a=all.find(x=>x.src===src&&!sorted.includes(x)); if(a) sorted.push(a); }
+  all.forEach(a=>{if(!sorted.includes(a))sorted.push(a);});
 
-  let html = '';
+  let html='';
   sorted.slice(0,5).forEach(s=>{
-    html += `<div class="news-item"><a href="${s.link}" target="_blank" style="text-decoration:none"><div class="news-src">${s.src}</div><div class="news-title">${s.title}</div></a></div>`;
+    html+=`<div class="news-item"><a href="${s.link}" target="_blank" style="text-decoration:none"><div class="news-src">${s.src}</div><div class="news-title">${s.title}</div></a></div>`;
   });
-  html += `<div class="news-footer"><a href="https://www.berlingske.dk" target="_blank" style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--orange);text-decoration:none;letter-spacing:1px">SENESTE NYHEDER ↗</a></div>`;
-  body.innerHTML = html;
+  html+=`<div class="news-footer"><a href="https://www.berlingske.dk" target="_blank" style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--orange);text-decoration:none;letter-spacing:1px">SENESTE NYHEDER ↗</a></div>`;
+  body.innerHTML=html;
 }
 loadNyheder();
 
@@ -815,8 +813,8 @@ async function loadPoliti(){
   const feed='https://via.ritzau.dk/rss/short-messages/latest?publisherId=90685';
   // Prøv tre metoder i rækkefølge
   const proxies=[
-    'https://corsproxy.io/?'+encodeURIComponent(feed),
     'https://api.allorigins.win/raw?url='+encodeURIComponent(feed),
+    'https://corsproxy.io/?'+encodeURIComponent(feed),
     'https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(feed)+'&count=5',
   ];
   let xml=null, items=[], useJson=false;
@@ -872,7 +870,7 @@ setInterval(loadSunTimes,60*60*1000); // opdater soltider hver time
 </script>
 
 <!-- ADMIN KNAP -->
-<button class="admin-btn" onclick="document.getElementById('adminModal').classList.add('open')" title="Indstillinger">
+<button class="admin-btn" onclick="openAdmin()" title="Indstillinger">
   <svg viewBox="0 0 20 20"><path d="M10 2a1 1 0 00-1 1v.5A6 6 0 004.5 9H4a1 1 0 000 2h.5A6 6 0 009 16.5v.5a1 1 0 002 0v-.5A6 6 0 0015.5 11H16a1 1 0 000-2h-.5A6 6 0 0011 3.5V3a1 1 0 00-1-1zm0 4a4 4 0 110 8 4 4 0 010-8zm0 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
 </button>
 
@@ -881,48 +879,90 @@ setInterval(loadSunTimes,60*60*1000); // opdater soltider hver time
   <div class="modal">
     <button class="modal-close" onclick="closeAdmin()">✕</button>
     <h2>Indstillinger</h2>
-    <div class="modal-field">
-      <label>Grok API-nøgle (xAI)</label>
-      <input type="password" id="cfg-grok" placeholder="xai-…" autocomplete="off">
+    <div id="admin-lock">
+      <div class="modal-field">
+        <label>Adgangskode</label>
+        <input type="password" id="cfg-adminpass-input" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')unlockAdmin()">
+      </div>
+      <div class="modal-row">
+        <button class="modal-save" onclick="unlockAdmin()">Lås op</button>
+        <button class="modal-cancel" onclick="closeAdmin()">Annuller</button>
+      </div>
+      <div class="modal-status" id="admin-lock-status"></div>
     </div>
-    <div class="modal-field">
-      <label>Finnhub API-nøgle (aktier)</label>
-      <input type="password" id="cfg-finnhub" placeholder="xxxxxxxxxxxxxxxx" autocomplete="off">
+    <div id="admin-content" style="display:none">
+      <div class="modal-field">
+        <label>Grok API-nøgle (xAI)</label>
+        <input type="password" id="cfg-grok" placeholder="xai-…" autocomplete="off">
+      </div>
+      <div class="modal-field">
+        <label>Finnhub API-nøgle (aktier)</label>
+        <input type="password" id="cfg-finnhub" placeholder="xxxxxxxxxxxxxxxx" autocomplete="off">
+      </div>
+      <div class="modal-field">
+        <label>Adgangskode (skift)</label>
+        <input type="password" id="cfg-adminpass-new" placeholder="Ny adgangskode…" autocomplete="off">
+      </div>
+      <div class="modal-row">
+        <button class="modal-save" onclick="saveAdmin()">Gem</button>
+        <button class="modal-cancel" onclick="closeAdmin()">Luk</button>
+      </div>
+      <div class="modal-status" id="admin-status"></div>
     </div>
-    <div class="modal-row">
-      <button class="modal-save" onclick="saveAdmin()">Gem nøgler</button>
-      <button class="modal-cancel" onclick="closeAdmin()">Annuller</button>
-    </div>
-    <div class="modal-status" id="admin-status"></div>
   </div>
 </div>
 
 <script>
-function loadAdminCfg(){
-  const grok=localStorage.getItem('cfg_grok')||'';
-  const fh=localStorage.getItem('cfg_finnhub')||'';
-  document.getElementById('cfg-grok').value=grok;
-  document.getElementById('cfg-finnhub').value=fh;
+const DEFAULT_ADMIN_PASS='dashboard';
+
+function openAdmin(){
+  // Reset til låst tilstand
+  document.getElementById('admin-lock').style.display='';
+  document.getElementById('admin-content').style.display='none';
+  document.getElementById('cfg-adminpass-input').value='';
+  document.getElementById('admin-lock-status').textContent='';
+  document.getElementById('adminModal').classList.add('open');
+  setTimeout(()=>document.getElementById('cfg-adminpass-input').focus(),100);
 }
+
+function unlockAdmin(){
+  const input=document.getElementById('cfg-adminpass-input').value;
+  const stored=localStorage.getItem('cfg_adminpass')||DEFAULT_ADMIN_PASS;
+  if(input===stored){
+    document.getElementById('admin-lock').style.display='none';
+    document.getElementById('admin-content').style.display='';
+    // Udfyld felter
+    document.getElementById('cfg-grok').value=localStorage.getItem('cfg_grok')||'';
+    document.getElementById('cfg-finnhub').value=localStorage.getItem('cfg_finnhub')||'';
+    document.getElementById('cfg-adminpass-new').value='';
+  }else{
+    document.getElementById('admin-lock-status').textContent='Forkert adgangskode';
+    document.getElementById('cfg-adminpass-input').value='';
+  }
+}
+
 function saveAdmin(){
   const grok=document.getElementById('cfg-grok').value.trim();
   const fh=document.getElementById('cfg-finnhub').value.trim();
+  const newpass=document.getElementById('cfg-adminpass-new').value.trim();
   if(grok) localStorage.setItem('cfg_grok',grok);
   if(fh)   localStorage.setItem('cfg_finnhub',fh);
+  if(newpass) localStorage.setItem('cfg_adminpass',newpass);
   document.getElementById('admin-status').textContent='Gemt ✓';
   setTimeout(()=>{
     document.getElementById('admin-status').textContent='';
     closeAdmin();
     if(fh) loadAktier();
-  },1000);
+  },900);
 }
+
 function closeAdmin(){
   document.getElementById('adminModal').classList.remove('open');
 }
+
 document.getElementById('adminModal').addEventListener('keydown',e=>{
   if(e.key==='Escape') closeAdmin();
 });
-window.addEventListener('load',loadAdminCfg,{once:true});
 </script>
 </body>
 </html>
