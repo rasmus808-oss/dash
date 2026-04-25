@@ -610,20 +610,37 @@ const FEEDS = [
   {src:'Information',url:'https://www.information.dk/feed',                        link:'https://www.information.dk'},
 ];
 
+async function fetchFeed(url){
+  // Prøv tre CORS-metoder i rækkefølge
+  const proxies=[
+    `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  ];
+  for(const p of proxies){
+    try{
+      const r=await fetch(p,{cache:'no-store'});
+      if(!r.ok) continue;
+      const txt=await r.text();
+      // allorigins /get returnerer JSON med .contents
+      let xml=txt;
+      try{ const j=JSON.parse(txt); if(j.contents) xml=j.contents; }catch(e){}
+      const doc=new DOMParser().parseFromString(xml,'text/xml');
+      const items=[...doc.querySelectorAll('item')];
+      if(items.length) return items;
+    }catch(e){}
+  }
+  return [];
+}
+
 async function loadNyheder(){
   const body=document.getElementById('nyheder-body');
-  // allorigins virker fra file:// og https://
-  const proxy='https://api.allorigins.win/raw?url=';
   const order=['DR','TV 2','Politiken','Ekstra Bl.','Information'];
   let all=[];
 
   for(const feed of FEEDS){
     try{
-      const r=await fetch(proxy+encodeURIComponent(feed.url),{cache:'no-store'});
-      if(!r.ok) continue;
-      const txt=await r.text();
-      const doc=new DOMParser().parseFromString(txt,'text/xml');
-      const items=[...doc.querySelectorAll('item')];
+      const items=await fetchFeed(feed.url);
       items.slice(0,2).forEach(item=>{
         const title=(item.querySelector('title')?.textContent||'').trim();
         const link=item.querySelector('link')?.textContent||feed.link;
@@ -646,7 +663,7 @@ async function loadNyheder(){
   sorted.slice(0,5).forEach(s=>{
     html+=`<div class="news-item"><a href="${s.link}" target="_blank" style="text-decoration:none"><div class="news-src">${s.src}</div><div class="news-title">${s.title}</div></a></div>`;
   });
-  html+=`<div class="news-footer"><a href="https://www.berlingske.dk" target="_blank" style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--orange);text-decoration:none;letter-spacing:1px">SENESTE NYHEDER ↗</a></div>`;
+  html+=`<div class="news-footer"><a href="https://www.dr.dk/nyheder" target="_blank" style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--orange);text-decoration:none;letter-spacing:1px">SENESTE NYHEDER ↗</a></div>`;
   body.innerHTML=html;
 }
 loadNyheder();
@@ -948,54 +965,52 @@ async function loadPoliti(){
 }
 loadPoliti();
 
-/* ── POLLEN (Astma-Allergi Danmark) ── */
+/* ── POLLEN (Open-Meteo Air Quality — CORS enabled) ── */
 async function loadPollen(){
   const body=document.getElementById('pollen-body');
-  const proxy='https://api.allorigins.win/raw?url=';
-  const url='https://www.astma-allergi.dk/umbraco/Api/PollenApi/GetPollenFeed';
   try{
-    const r=await fetch(proxy+encodeURIComponent(url),{cache:'no-store'});
-    const txt=await r.text();
-    const d=JSON.parse(txt);
-    // Find Copenhagen station
-    const station=d.find(s=>s.Name&&s.Name.toLowerCase().includes('køb'))||d[0];
-    if(!station||!station.Measurements){throw new Error('no data');}
+    const r=await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=55.6761&longitude=12.5683&current=alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen&timezone=Europe%2FCopenhagen');
+    const d=await r.json();
+    if(!d.current) throw new Error('no data');
 
-    // Level thresholds and labels
-    function pollenLevel(val,type){
-      if(val===null||val<0) return {cls:'p-ingen',label:'—'};
-      // General thresholds
-      const t=type&&type.toLowerCase();
-      let thresholds=[1,10,50,200]; // ingen, lav, moderat, høj, meget høj
-      if(t&&t.includes('græs')) thresholds=[1,10,50,200];
-      if(t&&t.includes('birk')||t&&t.includes('el')||t&&t.includes('hassel')) thresholds=[1,10,50,200];
-      if(val<thresholds[0]) return {cls:'p-ingen',label:'Ingen'};
-      if(val<thresholds[1]) return {cls:'p-lav',label:'Lav'};
-      if(val<thresholds[2]) return {cls:'p-moderat',label:'Moderat'};
-      if(val<thresholds[3]) return {cls:'p-hoej',label:'Høj'};
-      return {cls:'p-meget-hoej',label:'Meget høj'};
+    const typer=[
+      {key:'birch_pollen',  da:'Birk'},
+      {key:'alder_pollen',  da:'El'},
+      {key:'grass_pollen',  da:'Græs'},
+      {key:'mugwort_pollen',da:'Bynke'},
+      {key:'olive_pollen',  da:'Oliven'},
+    ];
+
+    function pollenNiveau(val,key){
+      if(val===null||val===undefined) return {cls:'p-ingen',label:'—'};
+      // Thresholds i grains/m³
+      const høj=key.includes('grass')?50:key.includes('birch')||key.includes('alder')?50:30;
+      const mHøj=høj*4;
+      if(val<1)    return {cls:'p-ingen',  label:'Ingen'};
+      if(val<10)   return {cls:'p-lav',    label:'Lav'};
+      if(val<høj)  return {cls:'p-moderat',label:'Moderat'};
+      if(val<mHøj) return {cls:'p-hoej',   label:'Høj'};
+      return           {cls:'p-meget-hoej',label:'Meget høj'};
     }
 
     let html='';
-    const shown=station.Measurements.filter(m=>m.Value!==null&&m.Value>=0).slice(0,6);
-    if(!shown.length){
-      body.innerHTML='<div style="font-size:0.72rem;color:var(--ink3)">Ingen målinger — uden for sæson</div>';
-      return;
-    }
-    shown.forEach(m=>{
-      const {cls,label}=pollenLevel(m.Value,m.Name);
+    let harData=false;
+    typer.forEach(t=>{
+      const val=d.current[t.key];
+      if(val===null||val===undefined) return;
+      harData=true;
+      const {cls,label}=pollenNiveau(val,t.key);
       html+=`<div class="pollen-item">
-        <span class="pollen-name">${m.Name||'Ukendt'}</span>
-        <span style="display:flex;align-items:center">
-          <span class="pollen-val" style="color:var(--ink2)">${m.Value!=null?m.Value:'—'}</span>
+        <span class="pollen-name">${t.da}</span>
+        <span style="display:flex;align-items:center;gap:5px">
+          <span class="pollen-val">${Math.round(val)}</span>
           <span class="pollen-dot ${cls}" title="${label}"></span>
         </span>
       </div>`;
     });
-    body.innerHTML=html;
+    body.innerHTML=harData?html:'<div style="font-size:0.72rem;color:var(--ink3)">Ingen pollen — uden for sæson</div>';
   }catch(e){
-    // Fallback: ingen data / uden for sæson
-    body.innerHTML='<div style="font-size:0.72rem;color:var(--ink3)">Ingen data — tjek astma-allergi.dk</div>';
+    body.innerHTML='<div style="font-size:0.72rem;color:var(--ink3)">Kunne ikke hente pollendata</div>';
   }
 }
 loadPollen();
